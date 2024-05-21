@@ -23,6 +23,9 @@ dotenv_path = join(dirname(__file__), '.env')
 # Load environment variables from the .env file
 load_dotenv(dotenv_path)
 
+def sha256(text:str):
+    return hashlib.sha256(text.encode()).hexdigest()
+
 
 def add_website_to_config(filename, url, keys, password=None):
     """
@@ -43,24 +46,30 @@ def add_website_to_config(filename, url, keys, password=None):
     except FileNotFoundError:
         config = {'websites': {}}
 
-    url_hash = hashlib.sha256(url.encode()).hexdigest()
+    url_hash = sha256(url)
+
     add_password = True
 
     if url_hash in config['websites']:
         if password:
             # Remove existing password line from .env
             existing_url = config['websites'][url_hash]['url']
-            existing_url_hash = hashlib.sha256(existing_url.encode()).hexdigest()
-            with open('.env', 'r') as env_file:
+            existing_url_hash = sha256(existing_url)
+
+            with open(dotenv_path, 'r') as env_file:
                 lines = env_file.readlines()
-            with open('.env', 'w') as env_file:
+
+            with open(dotenv_path, 'w') as env_file:
+                # Writing rest of the lines except for the url given
                 for line in lines:
                     if not line.startswith(existing_url_hash):
                         env_file.write(line)
-
+        else:
             add_password = False
+
         # Append keys to existing entry
         config['websites'][url_hash]['keys'].extend(keys)
+        config['websites'][url_hash]['keys'] = list(set(config['websites'][url_hash]['keys']))
     else:
         config['websites'][url_hash] = {'keys': keys, 'url': url}
 
@@ -68,8 +77,8 @@ def add_website_to_config(filename, url, keys, password=None):
         json.dump(config, file, indent=4)
 
     if password and add_password:
-        hashed_password = hashlib.sha256(url.encode()).hexdigest()
-        with open('.env', 'a') as env_file:
+        hashed_password = sha256(url)
+        with open(dotenv_path, 'a') as env_file:
             env_file.write(f"{hashed_password}={password}\n")
 
 

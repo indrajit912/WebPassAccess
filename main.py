@@ -9,7 +9,7 @@ import webbrowser
 import logging
 from pathlib import Path
 
-from mappings import SITE_MAPPING, SITE_PASSWD_MAPPING
+from mappings import create_site_mapping, create_password_mapping
 
 BASE_DIR = Path(__name__).parent.absolute()
 
@@ -56,21 +56,24 @@ def main(site_key=None):
     Returns:
         None
     """
+    site_mapping, config = create_site_mapping('config.json')
+    password_mapping = create_password_mapping()
+
     if site_key is None:
         if len(sys.argv) < 2:
             site_key = input("Enter the website key: ")
         else:
             site_key = sys.argv[1]
 
-    site_url = SITE_MAPPING.get(site_key)
-    if site_url is None:
+    site_url_hash = site_mapping.get(site_key)
+    if site_url_hash is None:
         logger.error(f"Site key '{site_key}' not found in mappings.")
         return
 
-    site_passwd = SITE_PASSWD_MAPPING.get(site_url)
+    site_url = config['websites'][site_url_hash]['url']
+    site_passwd = password_mapping.get(site_url_hash)
 
     visit_site(url=site_url, passwd=site_passwd)
-
 
 if __name__ == '__main__':
     main()

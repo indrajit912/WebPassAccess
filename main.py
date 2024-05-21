@@ -12,12 +12,11 @@ from pathlib import Path
 from mappings import SITE_MAPPING, SITE_PASSWD_MAPPING
 
 BASE_DIR = Path(__name__).parent.absolute()
-LOG_FILE = BASE_DIR / 'website_visit.log'
 
 logging.basicConfig(
     format='[%(asctime)s] %(levelname)s %(name)s: %(message)s',
     datefmt='%d-%b-%Y %I:%M:%S %p',
-    filename=str(LOG_FILE),
+    filename='website_visit.log',
     level=logging.INFO
 )
 

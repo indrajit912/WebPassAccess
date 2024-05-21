@@ -24,36 +24,6 @@ dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 
-SITE_MAPPING = {
-    "gpt":  CHATGPT_LOGIN_URL,
-    "chatgpt": CHATGPT_LOGIN_URL,
-    "isimail": ISIBC_OUTLOOK_MAIL_URL,
-    "gmail": GMAIL_URL,
-    "mail": GMAIL_URL,
-    "overleaf": OVERLEAF_URL,
-    "screener": SCREENER_URL,
-    "github": GITHUB_LOGIN_PAGE,
-    "fb": FB_LOGIN_PAGE,
-    "facebook": FB_LOGIN_PAGE,
-    "dropbox": DROPBOX_HOME_URL,
-    "drive": GOOGLE_DRIVE_URL,
-    "gdrive": GOOGLE_DRIVE_URL,
-    "googledrive": GOOGLE_DRIVE_URL,
-    "gdoc": GOOGLE_DOC_URL,
-    "doc": GOOGLE_DOC_URL,
-    "googledoc": GOOGLE_DOC_URL,
-    "statmath": STATMATH_ISIBANG_PAGE,
-    "isibang": ISIBANG_WEBSITE
-}
-
-SITE_PASSWD_MAPPING = {
-    CHATGPT_LOGIN_URL: os.environ.get("OPEN_AI_PASSWD"),
-    ISIBC_OUTLOOK_MAIL_URL: os.environ.get("ISI_MAIL_PASSWD"),
-    GITHUB_LOGIN_PAGE: os.environ.get('GITHUB_PASSWD'),
-    OVERLEAF_URL: os.environ.get("OVERLEAF_PASSWD"),
-    SCREENER_URL: os.environ.get("SCREENER_PASSWD")
-}
-
 def add_website_to_config(filename, url, keys, password=None):
     """
     Add a new website entry to the config.json file.
@@ -102,6 +72,7 @@ def add_website_to_config(filename, url, keys, password=None):
         with open('.env', 'a') as env_file:
             env_file.write(f"{hashed_password}={password}\n")
 
+
 def create_site_mapping(filename):
     """
     Create a site_mapping dictionary based on the URLs in the config.json file.
@@ -116,7 +87,9 @@ def create_site_mapping(filename):
         with open(filename, 'r') as file:
             config = json.load(file)
     except FileNotFoundError:
-        return {}
+        config = {}
+        site_mapping = {}
+        return site_mapping, config
 
     site_mapping = {}
     for url_hash, website_info in config.get('websites', {}).items():
@@ -126,7 +99,7 @@ def create_site_mapping(filename):
     return site_mapping, config
 
 
-def create_password_mapping():
+def create_password_mapping(dot_env_file):
     """
     Create a password_mapping dictionary from the .env file.
 
@@ -135,7 +108,7 @@ def create_password_mapping():
     """
     password_mapping = {}
 
-    with open('.env', 'r') as env_file:
+    with open(dot_env_file, 'r') as env_file:
         for line in env_file:
             line = line.strip()
             if line:

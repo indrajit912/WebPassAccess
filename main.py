@@ -9,9 +9,11 @@ import webbrowser
 import logging
 from pathlib import Path
 
-from mappings import create_site_mapping, create_password_mapping
+from mappings import create_site_mapping, create_password_mapping, add_website_to_config
 
 BASE_DIR = Path(__name__).parent.absolute()
+CONFIG_JSON = BASE_DIR / 'config.json'
+DOT_ENV_FILE = BASE_DIR / '.env'
 
 logging.basicConfig(
     format='[%(asctime)s] %(levelname)s %(name)s: %(message)s',
@@ -44,6 +46,19 @@ def visit_site(url:str, passwd:str=None):
     webbrowser.open(url)
     logger.info(log_msg)
 
+
+def take_website_input():
+    url = input("Enter the url (e.g- 'https://www.facebook.com'): ")
+    if not url:
+        print("\nNo url given. Exiting...")
+        sys.exit()
+    keys = input("Enter some keys for this website (separate your keys by comma; e.g- 'fb, facebook, fbook'): ").split(', ')
+    passwd = input("Do you want to add the password for this website? Leave it blank if not or else enter the password: ")
+    passwd = None if passwd == '' else passwd
+
+    return url, keys, passwd
+
+
 def main(site_key=None):
     """
     Main function to visit a website specified by `site_key`.
@@ -56,8 +71,23 @@ def main(site_key=None):
     Returns:
         None
     """
-    site_mapping, config = create_site_mapping('config.json')
-    password_mapping = create_password_mapping()
+    site_mapping, config = create_site_mapping(CONFIG_JSON)
+    if not config:
+        # Add new website
+        print("No website found. Add one:")
+        url, keys, passwd = take_website_input()
+
+        add_website_to_config(
+            filename=CONFIG_JSON,
+            url=url,
+            keys=keys,
+            password=passwd
+        )
+        print("Website added successfully!")
+        
+        sys.exit()
+
+    password_mapping = create_password_mapping(DOT_ENV_FILE)
 
     if site_key is None:
         if len(sys.argv) < 2:
@@ -74,6 +104,7 @@ def main(site_key=None):
     site_passwd = password_mapping.get(site_url_hash)
 
     visit_site(url=site_url, passwd=site_passwd)
+
 
 if __name__ == '__main__':
     main()

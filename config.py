@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
-BASE_DIR = Path(__name__).parent.absolute()
+BASE_DIR = Path(__file__).parent.absolute()
 APP_DATA_DIR = BASE_DIR / "app_data"
 
 if not APP_DATA_DIR.exists():

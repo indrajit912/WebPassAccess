@@ -3,10 +3,6 @@
 # Created On: Sep 27, 2023
 # Modified On: May 21, 2024
 # 
-# USAGES:
-#   - python main.py add --url www.twitter.com --password <newpassword> --keys <key1> <key2>
-#   - python main.py visit --site_key <key>
-#   - python main.py update --url www.twitter.com --password <anotherpass> --keys <key3> <key4>
 # 
 import sys
 import pyperclip
@@ -129,9 +125,15 @@ def add(args):
     )
     print("Website added successfully!")
 
-
 def help(args):
-    print("USAGES:")
+    print("USAGE: python3 main.py [command] [options]\n")
+    print("COMMANDS:")
+    print("  init          Initialize the application")
+    print("  add           Add website to configuration")
+    print("  visit         Visit an existing website by its key")
+    print("  update        Update an existing website data")
+    print("  help          Show this help message\n")
+    print("For more information on a specific command, use 'python3 main.py [command] --help'")
 
 def visit(args):
     # Get user data

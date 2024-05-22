@@ -27,7 +27,8 @@ def sha256(text:str):
     return hashlib.sha256(text.encode()).hexdigest()
 
 
-def add_website_to_config(filename, url, keys, password=None):
+def add_website_to_config(filename, url, keys, password=None, username=None):
+    # TODO: Save the encrypted password along with url in the config.json
     """
     Add a new website entry to the config.json file.
 

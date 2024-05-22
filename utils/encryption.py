@@ -12,6 +12,9 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.fernet import Fernet
 
+def sha256(text:str):
+    return hashlib.sha256(text.encode()).hexdigest()
+
 def generate_derived_key_from_passwd(password):
     """
     Generate a derived key from the provided password.

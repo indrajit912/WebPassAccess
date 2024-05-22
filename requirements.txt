@@ -2,3 +2,4 @@ python-dotenv
 pyperclip
 itsdangerous
 cryptography
+pwinput

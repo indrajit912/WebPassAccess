@@ -10,25 +10,22 @@ Make sure to customize the environment variable name ("YOUR_VAR_SAVED_IN_DOT_ENV
 based on your actual use case.
 """
 
-import os
-from os.path import join, dirname
-from dotenv import load_dotenv
 import json
-import hashlib
-from websites import *
 
-# Define the path to the .env file
-dotenv_path = join(dirname(__file__), '.env')
+from utils.authentication import sha256
+from utils.encryption import decrypt
+from config import WEBSITES_DATA_JSON
 
-# Load environment variables from the .env file
-load_dotenv(dotenv_path)
+def get_user_data():
+    with open(WEBSITES_DATA_JSON, 'r') as file:
+        user_data = json.load(file)
+    return user_data
 
-def sha256(text:str):
-    return hashlib.sha256(text.encode()).hexdigest()
+def save_user_data(data):
+    with open(WEBSITES_DATA_JSON, 'w') as f:
+        json.dump(data, f, indent=4)
 
-
-def add_website_to_config(filename, url, keys, password=None, username=None):
-    # TODO: Save the encrypted password along with url in the config.json
+def add_website_to_database(url, keys, password=None, username=None):
     """
     Add a new website entry to the config.json file.
 
@@ -41,49 +38,33 @@ def add_website_to_config(filename, url, keys, password=None, username=None):
     Returns:
         None
     """
-    try:
-        with open(filename, 'r') as file:
-            config = json.load(file)
-    except FileNotFoundError:
-        config = {'websites': {}}
-
+    user_data = get_user_data()
     url_hash = sha256(url)
 
-    add_password = True
-
-    if url_hash in config['websites']:
+    if url_hash in user_data['websites']:
+        user_data['websites'][url_hash]['keys'].extend(keys)
+        user_data['websites'][url_hash]['keys'] = list(set(user_data['websites'][url_hash]['keys']))
         if password:
-            # Remove existing password line from .env
-            existing_url = config['websites'][url_hash]['url']
-            existing_url_hash = sha256(existing_url)
+            user_data['websites'][url_hash]['password'] = password
+        if username:
+            user_data['websites'][url_hash]['username'] = username
 
-            with open(dotenv_path, 'r') as env_file:
-                lines = env_file.readlines()
-
-            with open(dotenv_path, 'w') as env_file:
-                # Writing rest of the lines except for the url given
-                for line in lines:
-                    if not line.startswith(existing_url_hash):
-                        env_file.write(line)
-        else:
-            add_password = False
-
-        # Append keys to existing entry
-        config['websites'][url_hash]['keys'].extend(keys)
-        config['websites'][url_hash]['keys'] = list(set(config['websites'][url_hash]['keys']))
     else:
-        config['websites'][url_hash] = {'keys': keys, 'url': url}
+        _new_site = {
+            'url': url,
+            'keys': keys
+        }
+        if password:
+            _new_site['password'] = password
+        if username:
+            _new_site['username'] = username
 
-    with open(filename, 'w') as file:
-        json.dump(config, file, indent=4)
+        user_data['websites'][url_hash] = _new_site
 
-    if password and add_password:
-        hashed_password = sha256(url)
-        with open(dotenv_path, 'a') as env_file:
-            env_file.write(f"{hashed_password}={password}\n")
+    save_user_data(user_data)
 
 
-def create_site_mapping(filename):
+def create_site_mapping():
     """
     Create a site_mapping dictionary based on the URLs in the config.json file.
 
@@ -93,23 +74,17 @@ def create_site_mapping(filename):
     Returns:
         dict: A dictionary mapping site keys to SHA256 hashes of website URLs.
     """
-    try:
-        with open(filename, 'r') as file:
-            config = json.load(file)
-    except FileNotFoundError:
-        config = {}
-        site_mapping = {}
-        return site_mapping, config
+    user_data = get_user_data()
 
     site_mapping = {}
-    for url_hash, website_info in config.get('websites', {}).items():
+    for url_hash, website_info in user_data.get('websites', {}).items():
         for key in website_info['keys']:
             site_mapping[key] = url_hash
 
-    return site_mapping, config
+    return site_mapping, user_data
 
 
-def create_password_mapping(dot_env_file):
+def create_password_mapping(app_key, user_data):
     """
     Create a password_mapping dictionary from the .env file.
 
@@ -117,12 +92,9 @@ def create_password_mapping(dot_env_file):
         dict: A dictionary mapping SHA256 hashes of website URLs to their passwords.
     """
     password_mapping = {}
-
-    with open(dot_env_file, 'r') as env_file:
-        for line in env_file:
-            line = line.strip()
-            if line:
-                url_hash, password = line.split('=')
-                password_mapping[url_hash] = password
+    for url_hash, website_info in user_data.get('websites', {}).items():
+        encrypted_passwd = website_info['password']
+        password = decrypt(encrypted_data=encrypted_passwd, key=app_key)
+        password_mapping[url_hash] = password
 
     return password_mapping

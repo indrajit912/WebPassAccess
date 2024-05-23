@@ -22,7 +22,7 @@ from utils.authentication import get_password, validate_user, generate_session_t
 logging.basicConfig(
     format='[%(asctime)s] %(levelname)s %(name)s: %(message)s',
     datefmt='%d-%b-%Y %I:%M:%S %p',
-    filename='website_visit.log',
+    filename='webpassaccess.log',
     level=logging.INFO
 )
 
@@ -77,6 +77,10 @@ def init(args):
         logger.error("Already initialized!")
         print("Already initialized!")
         sys.exit()
+
+    # Create app_data dir
+    if not APP_DATA_DIR.exists():
+        APP_DATA_DIR.mkdir()
 
     # Create a blank websites_data.json
     blank_data = {"websites": {}}
@@ -261,6 +265,9 @@ def show_db(args):
 
 
 def main():
+    # Check if the initialization file exists
+    init_required = not WEBSITES_DATA_JSON.exists()
+
     parser = argparse.ArgumentParser(description="CLI Application")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
@@ -268,32 +275,33 @@ def main():
     init_parser = subparsers.add_parser("init", help="Initialize the application")
     init_parser.set_defaults(func=init)
 
-    # Show db command
-    show_parser = subparsers.add_parser("db", help="Display all saved website data")
-    show_parser.set_defaults(func=show_db)
+    if not init_required:
+        # Show db command
+        show_parser = subparsers.add_parser("db", help="Display all saved website data")
+        show_parser.set_defaults(func=show_db)
 
-    # Add command
-    add_parser = subparsers.add_parser("add", help="Add website to configuration")
-    add_parser.add_argument("-p", "--password", dest="password", action="store_true", help="Password for this application that was set during initialization")
-    add_parser.add_argument("--url", required=True, help="URL of the website")
-    add_parser.add_argument('-k', "--keys", nargs="+", required=True, help="List of keys for the website.")
-    add_parser.add_argument("-sp", "--site_password", dest="site_password", action="store_true", help="Password for the website")
-    add_parser.add_argument("-su", "--site_username", dest="site_username", action="store_true", help="Password for the website")
-    add_parser.set_defaults(func=add)
+        # Add command
+        add_parser = subparsers.add_parser("add", help="Add website to configuration")
+        add_parser.add_argument("-p", "--password", dest="password", action="store_true", help="Password for this application that was set during initialization")
+        add_parser.add_argument("--url", required=True, help="URL of the website")
+        add_parser.add_argument('-k', "--keys", nargs="+", required=True, help="List of keys for the website.")
+        add_parser.add_argument("-sp", "--site_password", dest="site_password", action="store_true", help="Password for the website")
+        add_parser.add_argument("-su", "--site_username", dest="site_username", action="store_true", help="Password for the website")
+        add_parser.set_defaults(func=add)
 
-    # Visit command
-    visit_parser = subparsers.add_parser("visit", help="Visit an existing website by its key.")
-    visit_parser.add_argument('-k', "--site_key", required=True, help="Website key")
-    visit_parser.set_defaults(func=visit)
+        # Visit command
+        visit_parser = subparsers.add_parser("visit", help="Visit an existing website by its key.")
+        visit_parser.add_argument('-k', "--site_key", required=True, help="Website key")
+        visit_parser.set_defaults(func=visit)
 
-    # Update command
-    update_parser = subparsers.add_parser("update", help="Update an existing website data.")
-    update_parser.add_argument("-p", "--password", dest="password", action="store_true", help="Password for this application that was set during initialization")
-    update_parser.add_argument("--url", required=True, help="URL of the website to update")
-    update_parser.add_argument('-k', "--keys", nargs="+", default=None, help="List of keys for the website.")
-    update_parser.add_argument("-sp", "--site_password", dest="site_password", action="store_true", help="Password for the website")
-    update_parser.add_argument("-su", "--site_username", dest="site_username", action="store_true", help="Password for the website")
-    update_parser.set_defaults(func=update)
+        # Update command
+        update_parser = subparsers.add_parser("update", help="Update an existing website data.")
+        update_parser.add_argument("-p", "--password", dest="password", action="store_true", help="Password for this application that was set during initialization")
+        update_parser.add_argument("--url", required=True, help="URL of the website to update")
+        update_parser.add_argument('-k', "--keys", nargs="+", default=None, help="List of keys for the website.")
+        update_parser.add_argument("-sp", "--site_password", dest="site_password", action="store_true", help="Password for the website")
+        update_parser.add_argument("-su", "--site_username", dest="site_username", action="store_true", help="Password for the website")
+        update_parser.set_defaults(func=update)
 
     # Help command
     help_parser = subparsers.add_parser("help", help="Help command")

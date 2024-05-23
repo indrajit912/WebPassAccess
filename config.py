@@ -7,9 +7,6 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).parent.absolute()
 APP_DATA_DIR = BASE_DIR / "app_data"
 
-if not APP_DATA_DIR.exists():
-    APP_DATA_DIR.mkdir()
-
 DOT_ENV_FILE = BASE_DIR / '.env'
 WEBSITES_DATA_JSON = APP_DATA_DIR / 'websites_data.json'
 DOT_SESSION_TOKEN_FILE = APP_DATA_DIR / '.session_token'

@@ -25,11 +25,11 @@ Note: Ensure to keep the SECRET_KEY secret and protect session tokens from unaut
 from itsdangerous import URLSafeTimedSerializer
 import itsdangerous
 import pwinput
-from config import SECRET_KEY, DOT_SESSION_TOKEN_FILE
+from config import SECRET_KEY, DOT_SESSION_TOKEN_FILE, SESSION_TOKEN_EXPIRATION_IN_SECONDS
 from utils.encryption import sha256
 
 SALT = "terminal_session_token_from_user_master_passwd_hash"
-EXPIRATION = 3600 * 3  # 3 hours in seconds
+EXPIRATION = SESSION_TOKEN_EXPIRATION_IN_SECONDS
 
 def get_password(info_msg:str="Enter your password: ", success_msg:str="Password set successfully!"):
     bullet_unicode = '\u2022'

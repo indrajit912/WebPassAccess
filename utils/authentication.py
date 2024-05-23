@@ -31,13 +31,13 @@ from utils.encryption import sha256
 SALT = "terminal_session_token_from_user_master_passwd_hash"
 EXPIRATION = 3600 * 3  # 3 hours in seconds
 
-def get_password():
+def get_password(info_msg:str="Enter your password: ", success_msg:str="Password set successfully!"):
     bullet_unicode = '\u2022'
     while True:
-        password1 = pwinput.pwinput("Enter your password: ", mask=bullet_unicode)
+        password1 = pwinput.pwinput(info_msg, mask=bullet_unicode)
         password2 = input("Confirm your password: ")
         if password1 == password2:
-            print("Password set successfully!")
+            print(success_msg)
             return password1
         else:
             print("Passwords do not match. Please try again.")

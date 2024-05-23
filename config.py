@@ -18,3 +18,5 @@ DOT_SESSION_TOKEN_FILE = APP_DATA_DIR / '.session_token'
 load_dotenv(str(DOT_ENV_FILE))
 
 SECRET_KEY = os.environ.get("SECRET_KEY") or "this-is-very-very-strong-secret-key"
+
+BULLET_UNICODE = '\u2022'

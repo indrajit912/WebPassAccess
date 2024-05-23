@@ -10,11 +10,12 @@ import webbrowser
 import logging
 import argparse
 import json
+import pwinput
 
 from cryptography.fernet import Fernet
 
 from config import *
-from mappings import create_site_mapping, create_password_mapping, add_website_to_database, get_user_data
+from functions import create_site_mapping, create_password_username_mapping, add_website_to_database, get_user_data
 from utils.encryption import sha256, generate_derived_key_from_passwd, encrypt_user_private_key, hash_derived_key, decrypt_user_private_key, encrypt, decrypt
 from utils.authentication import get_password, validate_user, generate_session_token, save_session_token, get_existing_session_token, confirm_session_token
 
@@ -26,6 +27,9 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger("WebPassAccess.main")
+
+def _input_password(info_msg:str="Enter your password: "):
+    return pwinput.pwinput(info_msg, mask=BULLET_UNICODE)
 
 def _validate_user_and_get_app_key(user_data, password):
     # Validate user
@@ -83,7 +87,9 @@ def init(args):
     save_session_token(token=session_token)
 
     # Take user's password for the app
-    raw_password = get_password()
+    raw_password = get_password(
+        info_msg="Enter a password for this app (e.g- you could enter the system password!): "
+    )
 
     # Derive a key from the raw password to encrypt the fernet_key
     derived_key = generate_derived_key_from_passwd(raw_password)
@@ -105,21 +111,45 @@ def init(args):
 
     print("Database initialized. Now you can add data by using the command `add`.\n")
 
-def add(args):
-    password = args.password
-    url = args.url
-    keys = args.keys
-    site_passwd = args.site_password
-    site_username = args.site_username
 
-    user_data = get_user_data()
+def _setup_passwd_and_username_args(args, user_data):
+
+    # Checking if the app password is correct
+    if args.password:
+        password = _input_password(info_msg="[-] Enter the app password: ")
+    else:
+        print("[Error] No password provided. Use the flag '-p'.")
+        sys.exit()
+
+    # Get the app_key
     app_key = _validate_user_and_get_app_key(user_data=user_data, password=password)
 
-    site_passwd_encrypted = encrypt(data=site_passwd, key=app_key)
+    # Setting up optional args
+    if args.site_password:
+        site_passwd = get_password(
+            info_msg="\n[-] Enter the password for the given website: ",
+            success_msg="The password has been saved successfully along with the website url to the database.\n"
+        )
+        site_passwd_encrypted = encrypt(data=site_passwd, key=app_key)
+    else:
+        site_passwd_encrypted = None
+
+    if args.site_username:
+        site_username = input("[-] Enter the username for the website: ")
+    else:
+        site_username = None
+
+    return site_passwd_encrypted, site_username
+
+def add(args):
+    # Getting user data
+    user_data = get_user_data()
+
+    site_passwd_encrypted, site_username = _setup_passwd_and_username_args(args=args, user_data=user_data)
 
     add_website_to_database(
-        url=url,
-        keys=keys,
+        url=args.url,
+        keys=args.keys,
         password=site_passwd_encrypted,
         username=site_username
     )
@@ -145,7 +175,7 @@ def visit(args):
     if not app_key:
         # Invalid session key
         # Ask user for password
-        password = input("Session token expired. Enter your app password: ")
+        password = pwinput.pwinput("Session token expired. Enter your app password: ", mask=BULLET_UNICODE)
 
         # Verify user
         if not validate_user(saved_password_hash=user_data['password_hash'], given_password=password):
@@ -163,7 +193,7 @@ def visit(args):
         save_session_token(token=new_token)
 
     site_mapping, user_data = create_site_mapping()
-    password_mapping = create_password_mapping(app_key, user_data)
+    password_username_mapping = create_password_username_mapping(app_key, user_data)
     site_key = args.site_key
 
     site_url_hash = site_mapping.get(site_key)
@@ -172,27 +202,24 @@ def visit(args):
         return
 
     site_url = user_data['websites'][site_url_hash]['url']
-    site_passwd = password_mapping.get(site_url_hash)
+    site_info = password_username_mapping.get(site_url_hash)
 
-    visit_site(url=site_url, passwd=site_passwd)
+    visit_site(url=site_url, passwd=site_info['password'])
 
 def update(args):
-    password = args.password
-    url = args.url
-    keys = args.keys
-    site_passwd = args.site_password
-    site_username = args.site_username
-
+    # Getting user data
     user_data = get_user_data()
 
+    # Check whether the url exists in the db
+    url=args.url
     if not sha256(url) in user_data["websites"].keys():
         print(f"No website with the url '{url}' found! Exiting ...")
         sys.exit()
 
-    app_key = _validate_user_and_get_app_key(user_data=user_data, password=password)
+    site_passwd_encrypted, site_username = _setup_passwd_and_username_args(args=args, user_data=user_data)
 
-    site_passwd_encrypted = encrypt(data=site_passwd, key=app_key)
-
+    # Setting up keys
+    keys = args.keys
     keys = (
         args.keys
         if args.keys
@@ -207,6 +234,23 @@ def update(args):
     )
     print("Website updated successfully!")
 
+
+def show_db(args):
+    # Get user data
+    data = get_user_data()
+
+    print("Website Information:")
+    print("====================")
+    for _, website in data["websites"].items():
+        print(f"[-] URL: {website['url']}")
+        if 'username' in website:
+            print(f"[-] Username: {website['username']}")
+        if 'password' in website:
+            print("[-] Password: [encrypted]")
+        print(f"[-] Keys: {', '.join(website['keys'])}")
+        print()
+
+
 def main():
     parser = argparse.ArgumentParser(description="CLI Application")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -215,27 +259,34 @@ def main():
     init_parser = subparsers.add_parser("init", help="Initialize the application")
     init_parser.set_defaults(func=init)
 
+    # Show db command
+    show_parser = subparsers.add_parser("db", help="Print all saved websites data")
+    show_parser.set_defaults(func=show_db)
+
     # Add command
     add_parser = subparsers.add_parser("add", help="Add website to configuration")
-    add_parser.add_argument("--password", "-p", required=True, help="Password for this application that was set during initialization")
+    add_parser.add_argument("-p", "--password", dest="password", action="store_true", help="Password for this application that was set during initialization")
     add_parser.add_argument("--url", required=True, help="URL of the website")
-    add_parser.add_argument("--keys", nargs="+", required=True, help="List of keys for the website.")
-    add_parser.add_argument("--site_password", default=None, help="Password for the website (Optional)")
-    add_parser.add_argument("--site_username", default=None, help="Username for the website (Optional)")
+    add_parser.add_argument('-k', "--keys", nargs="+", required=True, help="List of keys for the website.")
+    add_parser.add_argument("-sp", "--site_password", dest="site_password", action="store_true", help="Password for the website")
+    add_parser.add_argument("-su", "--site_username", dest="site_username", action="store_true", help="Password for the website")
     add_parser.set_defaults(func=add)
 
+    # Visit command
     visit_parser = subparsers.add_parser("visit", help="Visit an existing website by its key.")
-    visit_parser.add_argument("--site_key", required=True, help="Website key")
+    visit_parser.add_argument('-k', "--site_key", required=True, help="Website key")
     visit_parser.set_defaults(func=visit)
 
+    # Update command
     update_parser = subparsers.add_parser("update", help="Update an existing website data.")
-    update_parser.add_argument("--password", "-p", required=True, help="Password for this application that was set during initialization")
+    update_parser.add_argument("-p", "--password", dest="password", action="store_true", help="Password for this application that was set during initialization")
     update_parser.add_argument("--url", required=True, help="URL of the website to update")
-    update_parser.add_argument("--keys", nargs="+", default=None, help="List of keys for the website.")
-    update_parser.add_argument("--site_password", default=None, help="Password for the website (Optional)")
-    update_parser.add_argument("--site_username", default=None, help="Username for the website (Optional)")
+    update_parser.add_argument('-k', "--keys", nargs="+", default=None, help="List of keys for the website.")
+    update_parser.add_argument("-sp", "--site_password", dest="site_password", action="store_true", help="Password for the website")
+    update_parser.add_argument("-su", "--site_username", dest="site_username", action="store_true", help="Password for the website")
     update_parser.set_defaults(func=update)
 
+    # Help command
     help_parser = subparsers.add_parser("help", help="Help command")
     help_parser.set_defaults(func=help)
 

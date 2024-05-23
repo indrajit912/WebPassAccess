@@ -84,7 +84,7 @@ def create_site_mapping():
     return site_mapping, user_data
 
 
-def create_password_mapping(app_key, user_data):
+def create_password_username_mapping(app_key, user_data):
     """
     Create a password_mapping dictionary from the .env file.
 
@@ -93,8 +93,18 @@ def create_password_mapping(app_key, user_data):
     """
     password_mapping = {}
     for url_hash, website_info in user_data.get('websites', {}).items():
-        encrypted_passwd = website_info['password']
-        password = decrypt(encrypted_data=encrypted_passwd, key=app_key)
-        password_mapping[url_hash] = password
+        encrypted_passwd = website_info.get('password', None)
+        username = website_info.get('username', None)
+        
+        password = (
+            decrypt(encrypted_data=encrypted_passwd, key=app_key) if encrypted_passwd
+            else ''
+        )
+        username = ('' if not username else username)
+
+        password_mapping[url_hash] = {
+            'password': password,
+            'username': username
+        }
 
     return password_mapping

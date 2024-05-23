@@ -18,15 +18,24 @@ from config import *
 from functions import create_site_mapping, create_password_username_mapping, add_website_to_database, get_user_data
 from utils.encryption import sha256, generate_derived_key_from_passwd, encrypt_user_private_key, hash_derived_key, decrypt_user_private_key, encrypt, decrypt
 from utils.authentication import get_password, validate_user, generate_session_token, save_session_token, get_existing_session_token, confirm_session_token
+from utils.bash_utilities import add_wpa_command_aliases_to_bashrc
 
-logging.basicConfig(
-    format='[%(asctime)s] %(levelname)s %(name)s: %(message)s',
-    datefmt='%d-%b-%Y %I:%M:%S %p',
-    filename='webpassaccess.log',
-    level=logging.INFO
-)
 
-logger = logging.getLogger("WebPassAccess.main")
+# logging.basicConfig(
+#     format='[%(asctime)s] %(levelname)s %(name)s: %(message)s',
+#     datefmt='%d-%b-%Y %I:%M:%S %p',
+#     filename='webpassaccess.log',
+#     level=logging.INFO
+# )
+
+# logger = logging.getLogger("WebPassAccess.main")
+
+# # Set the root logger level to CRITICAL
+# logging.basicConfig(level=logging.CRITICAL)
+
+# # Disable all logging for other loggers and handlers
+# logging.disable(logging.CRITICAL)
+
 
 def _input_password(info_msg:str="Enter your password: "):
     return pwinput.pwinput(info_msg, mask=BULLET_UNICODE)
@@ -35,7 +44,7 @@ def _validate_user_and_get_app_key(user_data, password):
     # Validate user
     saved_hashed_passwd = user_data['password_hash']
     if not validate_user(saved_password_hash=saved_hashed_passwd, given_password=password):
-        logger.error("Wrong password! Exiting...")
+        # logger.error("Wrong password! Exiting...")
         print("Wrong password! Try again later. Exiting...")
         sys.exit()
 
@@ -68,13 +77,13 @@ def visit_site(url:str, passwd:str=None):
     if passwd:
         pyperclip.copy(passwd)
     webbrowser.open(url)
-    logger.info(log_msg)
+    # logger.info(log_msg)
 
 def init(args):
     """Initialize the app"""
 
     if WEBSITES_DATA_JSON.exists():
-        logger.error("Already initialized!")
+        # logger.error("Database already initialized!")
         print("Already initialized!")
         sys.exit()
 
@@ -114,8 +123,11 @@ def init(args):
     # Save the data
     with open(WEBSITES_DATA_JSON, 'w') as file:
         json.dump(blank_data, file, indent=4)
+    
+    add_wpa_command_aliases_to_bashrc()
 
     print("Database initialized. Now you can add data by using the command `add`.\n")
+    # logger.info("Database initialized!")
 
 
 def _setup_passwd_and_username_args(args, user_data):
@@ -124,7 +136,7 @@ def _setup_passwd_and_username_args(args, user_data):
     if args.password:
         password = _input_password(info_msg="[-] Enter the app password: ")
     else:
-        logger.error("No password provided.")
+        # logger.error("No password provided.")
         print("[Error] No password provided. Use the flag '-p'.")
         sys.exit()
 
@@ -160,7 +172,7 @@ def add(args):
         password=site_passwd_encrypted,
         username=site_username
     )
-    logger.info("Website added successfully!")
+    # logger.info("Website added successfully!")
     print("Website added successfully!")
 
 def help(args):
@@ -188,7 +200,7 @@ def visit(args):
 
         # Verify user
         if not validate_user(saved_password_hash=user_data['password_hash'], given_password=password):
-            logger.error("Wrong password! Exiting...")
+            # logger.error("Wrong password! Exiting...")
             print("Wrong password! Try again. Exiting...")
         
         # Get the decrypted app_key from database
@@ -208,7 +220,7 @@ def visit(args):
 
     site_url_hash = site_mapping.get(site_key)
     if site_url_hash is None:
-        logger.error(f"Site key '{site_key}' not found in mappings.")
+        # logger.error(f"Site key '{site_key}' not found in mappings.")
         print(f"Site key '{site_key}' not found in mappings.")
         return
 
@@ -224,7 +236,7 @@ def update(args):
     # Check whether the url exists in the db
     url=args.url
     if not sha256(url) in user_data["websites"].keys():
-        logger.error(f"No website with the url '{url}' found! Exiting ...")
+        # logger.error(f"No website with the url '{url}' found! Exiting ...")
         print(f"No website with the url '{url}' found! Exiting ...")
         sys.exit()
 
@@ -244,7 +256,7 @@ def update(args):
         password=site_passwd_encrypted,
         username=site_username
     )
-    logger.info("Website updated successfully!")
+    # logger.info("Website updated successfully!")
     print("Website updated successfully!")
 
 

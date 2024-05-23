@@ -15,6 +15,9 @@ import json
 from utils.authentication import sha256
 from utils.encryption import decrypt
 from config import WEBSITES_DATA_JSON
+import logging
+
+# logger = logging.getLogger(__name__)
 
 def get_user_data():
     with open(WEBSITES_DATA_JSON, 'r') as file:
@@ -62,6 +65,7 @@ def add_website_to_database(url, keys, password=None, username=None):
         user_data['websites'][url_hash] = _new_site
 
     save_user_data(user_data)
+    # logger.info("Website added by user successfully.")
 
 
 def create_site_mapping():

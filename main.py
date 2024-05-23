@@ -35,6 +35,7 @@ def _validate_user_and_get_app_key(user_data, password):
     # Validate user
     saved_hashed_passwd = user_data['password_hash']
     if not validate_user(saved_password_hash=saved_hashed_passwd, given_password=password):
+        logger.error("Wrong password! Exiting...")
         print("Wrong password! Try again later. Exiting...")
         sys.exit()
 
@@ -73,6 +74,7 @@ def init(args):
     """Initialize the app"""
 
     if WEBSITES_DATA_JSON.exists():
+        logger.error("Already initialized!")
         print("Already initialized!")
         sys.exit()
 
@@ -118,6 +120,7 @@ def _setup_passwd_and_username_args(args, user_data):
     if args.password:
         password = _input_password(info_msg="[-] Enter the app password: ")
     else:
+        logger.error("No password provided.")
         print("[Error] No password provided. Use the flag '-p'.")
         sys.exit()
 
@@ -153,12 +156,14 @@ def add(args):
         password=site_passwd_encrypted,
         username=site_username
     )
+    logger.info("Website added successfully!")
     print("Website added successfully!")
 
 def help(args):
     print("USAGE: python3 main.py [command] [options]\n")
     print("COMMANDS:")
     print("  init          Initialize the application")
+    print("  db            Display all saved website data")
     print("  add           Add website to configuration")
     print("  visit         Visit an existing website by its key")
     print("  update        Update an existing website data")
@@ -179,6 +184,7 @@ def visit(args):
 
         # Verify user
         if not validate_user(saved_password_hash=user_data['password_hash'], given_password=password):
+            logger.error("Wrong password! Exiting...")
             print("Wrong password! Try again. Exiting...")
         
         # Get the decrypted app_key from database
@@ -199,6 +205,7 @@ def visit(args):
     site_url_hash = site_mapping.get(site_key)
     if site_url_hash is None:
         logger.error(f"Site key '{site_key}' not found in mappings.")
+        print(f"Site key '{site_key}' not found in mappings.")
         return
 
     site_url = user_data['websites'][site_url_hash]['url']
@@ -213,6 +220,7 @@ def update(args):
     # Check whether the url exists in the db
     url=args.url
     if not sha256(url) in user_data["websites"].keys():
+        logger.error(f"No website with the url '{url}' found! Exiting ...")
         print(f"No website with the url '{url}' found! Exiting ...")
         sys.exit()
 
@@ -232,6 +240,7 @@ def update(args):
         password=site_passwd_encrypted,
         username=site_username
     )
+    logger.info("Website updated successfully!")
     print("Website updated successfully!")
 
 
@@ -260,7 +269,7 @@ def main():
     init_parser.set_defaults(func=init)
 
     # Show db command
-    show_parser = subparsers.add_parser("db", help="Print all saved websites data")
+    show_parser = subparsers.add_parser("db", help="Display all saved website data")
     show_parser.set_defaults(func=show_db)
 
     # Add command

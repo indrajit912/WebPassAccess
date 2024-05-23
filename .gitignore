@@ -1,5 +1,6 @@
 .session_token
 websites_data.json
+websites
 app_data/
 ### Python ###
 # Byte-compiled / optimized / DLL files

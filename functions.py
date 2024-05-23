@@ -11,6 +11,7 @@ based on your actual use case.
 """
 
 import json
+import os
 
 from utils.authentication import sha256
 from utils.encryption import decrypt
@@ -18,6 +19,10 @@ from config import WEBSITES_DATA_JSON
 import logging
 
 # logger = logging.getLogger(__name__)
+
+def clear_screen():
+    """Clears the terminal screen."""
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def get_user_data():
     with open(WEBSITES_DATA_JSON, 'r') as file:

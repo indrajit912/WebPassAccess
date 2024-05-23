@@ -15,7 +15,7 @@ import pwinput
 from cryptography.fernet import Fernet
 
 from config import *
-from functions import create_site_mapping, create_password_username_mapping, add_website_to_database, get_user_data
+from functions import create_site_mapping, create_password_username_mapping, add_website_to_database, get_user_data, save_user_data, clear_screen
 from utils.encryption import sha256, generate_derived_key_from_passwd, encrypt_user_private_key, hash_derived_key, decrypt_user_private_key, encrypt, decrypt
 from utils.authentication import get_password, validate_user, generate_session_token, save_session_token, get_existing_session_token, confirm_session_token
 from utils.bash_utilities import add_wpa_command_aliases_to_bashrc
@@ -175,17 +175,6 @@ def add(args):
     # logger.info("Website added successfully!")
     print("Website added successfully!")
 
-def help(args):
-    print("USAGE: python3 main.py [command] [options]\n")
-    print("COMMANDS:")
-    print("  init          Initialize the application")
-    print("  db            Display all saved website data")
-    print("  add           Add website to configuration")
-    print("  visit         Visit an existing website by its key")
-    print("  update        Update an existing website data")
-    print("  help          Show this help message\n")
-    print("For more information on a specific command, use 'python3 main.py [command] --help'")
-
 def visit(args):
     # Get user data
     user_data = get_user_data()
@@ -229,6 +218,22 @@ def visit(args):
 
     visit_site(url=site_url, passwd=site_info['password'])
 
+def delete_site(args):
+    # Getting user data
+    user_data = get_user_data()
+    key_to_del = args.site_key
+
+    found = False
+    for url_hash, website_info in user_data['websites'].items():
+        if key_to_del in website_info['keys']:
+            del user_data['websites'][url_hash]
+            save_user_data(user_data)
+            print("Website data deleted successfully!")
+            return
+
+    if not found:
+        print(f"No website found with the key '{key_to_del}'")
+
 def update(args):
     # Getting user data
     user_data = get_user_data()
@@ -264,16 +269,34 @@ def show_db(args):
     # Get user data
     data = get_user_data()
 
+    clear_screen()
+    print("======================================")
     print("Website Information:")
-    print("====================")
+    print("======================================")
+    sp = "     - "
+    count = 1
     for _, website in data["websites"].items():
-        print(f"[-] URL: {website['url']}")
+        print(f"[{count}] URL: {website['url']}")
         if 'username' in website:
-            print(f"[-] Username: {website['username']}")
+            print(f"{sp}Username: {website['username']}")
         if 'password' in website:
-            print("[-] Password: [encrypted]")
-        print(f"[-] Keys: {', '.join(website['keys'])}")
+            print(f"{sp}Password: [encrypted]")
+        print(f"{sp}Keys: {', '.join(website['keys'])}")
         print()
+        count +=1
+
+
+def help(args):
+    print("USAGE: python3 main.py [command] [options]\n")
+    print("COMMANDS:")
+    print("  init          Initialize the application")
+    print("  db            Display all saved website data")
+    print("  add           Add website to configuration")
+    print("  visit         Visit an existing website by its key")
+    print("  update        Update an existing website data")
+    print("  del           Delete an existing website data")
+    print("  help          Show this help message\n")
+    print("For more information on a specific command, use 'python3 main.py [command] --help'")
 
 
 def main():
@@ -314,6 +337,11 @@ def main():
         update_parser.add_argument("-sp", "--site_password", dest="site_password", action="store_true", help="Password for the website")
         update_parser.add_argument("-su", "--site_username", dest="site_username", action="store_true", help="Password for the website")
         update_parser.set_defaults(func=update)
+
+        # Delete command
+        del_parser = subparsers.add_parser("del", help="Delete an existing website by its key.")
+        del_parser.add_argument('-k', "--site_key", required=True, help="Website key")
+        del_parser.set_defaults(func=delete_site)
 
     # Help command
     help_parser = subparsers.add_parser("help", help="Help command")

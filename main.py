@@ -286,6 +286,29 @@ def show_db(args):
         count +=1
 
 
+def search(args):
+    data = get_user_data()
+
+    site_key = args.site_key
+
+    clear_screen()
+    print("======================================")
+    print("Website Information:")
+    print("======================================")
+    sp = "     - "
+
+    for _, website in data["websites"].items():
+        if site_key in website['keys']:
+            print(f"[-] URL: {website['url']}")
+            if 'username' in website:
+                print(f"{sp}Username: {website['username']}")
+            if 'password' in website:
+                print(f"{sp}Password: [encrypted]")
+            print(f"{sp}Keys: {', '.join(website['keys'])}")
+            print()
+            break
+
+
 def help(args):
     print("USAGE: python3 main.py [command] [options]\n")
     print("COMMANDS:")
@@ -295,6 +318,7 @@ def help(args):
     print("  visit         Visit an existing website by its key")
     print("  update        Update an existing website data")
     print("  del           Delete an existing website data")
+    print("  search        Search an existing website data")
     print("  help          Show this help message\n")
     print("For more information on a specific command, use 'python3 main.py [command] --help'")
 
@@ -328,6 +352,11 @@ def main():
         visit_parser = subparsers.add_parser("visit", help="Visit an existing website by its key.")
         visit_parser.add_argument('-k', "--site_key", required=True, help="Website key")
         visit_parser.set_defaults(func=visit)
+
+        # Search command
+        search_parser = subparsers.add_parser("search", help="Search an existing website by its key.")
+        search_parser.add_argument('-k', "--site_key", required=True, help="Website key")
+        search_parser.set_defaults(func=search)
 
         # Update command
         update_parser = subparsers.add_parser("update", help="Update an existing website data.")

@@ -138,7 +138,8 @@ def add_wpa_command_aliases_to_bashrc(main_script_path:Path=Path.cwd() / 'main.p
         "update": "wpa-update",
         "visit": "visit",
         "db": "wpa-db",
-        "del": "wpa-del"
+        "del": "wpa-del",
+        "search": "wpa-search"
     }
     
     add_alias = generate_alias(
@@ -158,6 +159,12 @@ def add_wpa_command_aliases_to_bashrc(main_script_path:Path=Path.cwd() / 'main.p
         commands=[sys.executable, str(main_script_path), "visit", "-k"]
     )
     add_alias_to_bash_profile(alias_string=visit_alias, replace=True)
+
+    search_alias = generate_alias(
+        alias_name=wpa_aliases['search'],
+        commands=[sys.executable, str(main_script_path), "search", "-k"]
+    )
+    add_alias_to_bash_profile(alias_string=search_alias, replace=True)
 
     db_alias = generate_alias(
         alias_name=wpa_aliases['db'],

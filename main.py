@@ -336,7 +336,7 @@ def main():
 
     if not init_required:
         # Show db command
-        show_parser = subparsers.add_parser("db", help="Display all saved website data")
+        show_parser = subparsers.add_parser("list", help="Display all saved website data")
         show_parser.set_defaults(func=show_db)
 
         # Add command
